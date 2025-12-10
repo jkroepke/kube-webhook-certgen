@@ -12,7 +12,7 @@
 
 # Kubernetes webhook certificate generator and patcher
 
-**This is a copy/fork of the project existing in [jet/kube-webhook-certgen](https://github.com/jkroepke/kube-webhook-certgen/)**
+**This is a copy/fork of the project existing in [ingress-nginx/kube-webhook-certgen](https://github.com/kubernetes/ingress-nginx/tree/59c0bbecc1ef991ba572e18a4f529b51c3c311f0/images/kube-webhook-certgen) project**
 
 ## Overview
 Generates a CA and leaf certificate with a long (100y) expiration, then patches [Kubernetes Admission Webhooks](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
@@ -106,7 +106,7 @@ Contributions welcome! Please read our [Code of Conduct](CODE_OF_CONDUCT.md) and
 
 ## Related Projects
 
-* [ingress-nginx/kube-webhook-certgen](https://github.com/kubernetes/ingress-nginx/tree/main/images/kube-webhook-certgen).
+* [ingress-nginx/kube-webhook-certgen](https://github.com/kubernetes/ingress-nginx/tree/59c0bbecc1ef991ba572e18a4f529b51c3c311f0/images/kube-webhook-certgen).
 * [jet/kube-webhook-certgen](https://github.com/jet/kube-webhook-certgen)
 
 ## Copyright and license

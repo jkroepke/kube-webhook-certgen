@@ -12,6 +12,7 @@ permissions: {}
 
 jobs:
   create:
+    environment: "Create Release Tag"
     runs-on: ubuntu-24.04
     name: Create Tag
     if: startsWith(inputs.tag, 'v')

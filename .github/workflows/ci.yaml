@@ -132,6 +132,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     environment: "Create Release Tag"
+    concurrency: create-tag
     needs:
       - build
       - lint

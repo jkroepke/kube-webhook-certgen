@@ -22,6 +22,7 @@ jobs:
         with:
           persist-credentials: 'false'
 
+      # zizmor: ignore[cache-poisoning] # Just snapshot builds, not production
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: 'go.mod'
@@ -150,6 +151,7 @@ jobs:
 
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
+          cache: 'false'
           go-version-file: 'go.mod'
 
       - uses: anchore/sbom-action/download-syft@da167eac915b4e86f08b264dbdbc867b61be6f0c # v0.20.5

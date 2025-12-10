@@ -2,6 +2,12 @@
   "$schema": "https://json.schemastore.org/semantic-release",
   "plugins": [
     "@semantic-release/commit-analyzer",
-    "@semantic-release/github"
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "gh api --method POST -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' /repos/jkroepke/kube-webhook-certgen/git/refs -f 'ref=refs/tags/${nextRelease.gitTag}' -f 'sha=${nextRelease.gitHead}'"
+      }
+    ]
   ]
 }

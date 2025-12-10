@@ -1,20 +1,29 @@
+[![CI](https://github.com/jkroepke/kube-webhook-certgen/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/jkroepke/kube-webhook-certgen/actions/workflows/ci.yaml)
+[![GitHub license](https://img.shields.io/github/license/jkroepke/kube-webhook-certgen)](https://github.com/jkroepke/kube-webhook-certgen/blob/master/LICENSE.txt)
+[![Current Release](https://img.shields.io/github/release/jkroepke/kube-webhook-certgen.svg?logo=github)](https://github.com/jkroepke/kube-webhook-certgen/releases/latest)
+[![GitHub Repo stars](https://img.shields.io/github/stars/jkroepke/kube-webhook-certgen?style=flat&logo=github)](https://github.com/jkroepke/kube-webhook-certgen/stargazers)
+[![GitHub all releases](https://img.shields.io/github/downloads/jkroepke/kube-webhook-certgen/total?logo=github)](https://github.com/jkroepke/kube-webhook-certgen/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jkroepke/kube-webhook-certgen)](https://goreportcard.com/report/github.com/jkroepke/kube-webhook-certgen)
+[![codecov](https://codecov.io/gh/jkroepke/kube-webhook-certgen/graph/badge.svg?token=TJRPHF5BVX)](https://codecov.io/gh/jkroepke/kube-webhook-certgen)
+
+# kube-webhook-certgen
+
+⭐ Don't forget to star this repository! ⭐
+
 # Kubernetes webhook certificate generator and patcher
 
 **This is a copy/fork of the project existing in [jet/kube-webhook-certgen](https://github.com/jkroepke/kube-webhook-certgen/)**
 
-We moved it here so we can change / update the Kubernetes APIs, and we are really thankful to the original
-creators.
-
 ## Overview
 Generates a CA and leaf certificate with a long (100y) expiration, then patches [Kubernetes Admission Webhooks](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
-by setting the `caBundle` field with the generated CA. 
+by setting the `caBundle` field with the generated CA.
 Can optionally patch the hooks `failurePolicy` setting - useful in cases where a single Helm chart needs to provision resources
 and hooks at the same time as patching.
 
 The utility works in two parts, optimized to work better with the Helm provisioning process that leverages pre-install and post-install hooks to execute this as a Kubernetes job.
 
 ## Security Considerations
-This tool may not be adequate in all security environments. If a more complete solution is required, you may want to 
+This tool may not be adequate in all security environments. If a more complete solution is required, you may want to
 seek alternatives such as [jetstack/cert-manager](https://github.com/jetstack/cert-manager)
 
 ## Command line options
@@ -83,4 +92,55 @@ Global Flags:
 ```
 
 ## Known Users
-- [stable/prometheus-operator](https://github.com/helm/charts/tree/master/stable/prometheus-operator) helm chart
+- [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) helm chart
+
+## Requirements
+
+- Go 1.21+ (for building from source)
+- Web server with syslog support (Nginx, Apache)
+- Network connectivity between web server and access-log-exporter
+
+## Contributing
+
+Contributions welcome! Please read our [Code of Conduct](CODE_OF_CONDUCT.md) and submit pull requests to help improve the project.
+
+## Related Projects
+
+* [martin-helmich/prometheus-nginxlog-exporter](https://github.com/martin-helmich/prometheus-nginxlog-exporter).
+* [ozonru/accesslog-exporter](https://github.com/ozonru/accesslog-exporter)
+
+## Copyright and license
+
+© 2025 Jan-Otto Kröpke (jkroepke)
+
+Licensed under the [Apache License, Version 2.0](LICENSE.txt).
+
+## Open Source Sponsors
+
+Thanks to all sponsors!
+
+## Acknowledgements
+
+Thanks to JetBrains IDEs for their support.
+
+<table>
+  <thead>
+    <tr>
+      <th><a href="https://www.jetbrains.com/?from=jkroepke">JetBrains IDEs</a></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <p align="center">
+          <a href="https://www.jetbrains.com/?from=jkroepke">
+            <picture>
+              <source srcset="https://www.jetbrains.com/company/brand/img/logo_jb_dos_3.svg" media="(prefers-color-scheme: dark)">
+              <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg" style="height: 50px">
+            </picture>
+          </a>
+        </p>
+      </td>
+    </tr>
+  </tbody>
+</table>

@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+
+version: 2
+
+builds:
+  - id: "kube-webhook-certgen"
+    main: .
+    binary: kube-webhook-certgen
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+      - s390x
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - >-
+        -s -w
+        -X core.Version={{.Version}}
+        -X core.BuildTime={{.Date}}
+
+dockers_v2:
+  - images:
+      - ghcr.io/jkroepke/kube-webhook-certgen
+    tags:
+      - '{{ .Version }}'
+      - '{{ if and .Tag (not .Prerelease) (not .IsSnapshot) (ne .Branch "main") }}latest{{end}}'
+      - '{{ if eq .Branch "main" }}main{{end}}'
+    extra_files:
+      - packaging/etc/kube-webhook-certgen/config.yaml
+    labels:
+      "org.opencontainers.image.authors": 'Jan-Otto Kröpke https://github.com/jkroepke/'
+      "org.opencontainers.image.created": '{{.Date}}'
+      "org.opencontainers.image.description": 'Tools to help with self signed cert generation for Kubernetes test environment.'
+      "org.opencontainers.image.licenses": 'Apache-2.0'
+      "org.opencontainers.image.revision": '{{.FullCommit}}'
+      "org.opencontainers.image.source": 'https://github.com/jkroepke/kube-webhook-certgen'
+      "org.opencontainers.image.title": '{{.ProjectName}}'
+      "org.opencontainers.image.vendor": 'Jan-Otto Kröpke'
+      "org.opencontainers.image.version": '{{.Version}}'
+    annotations:
+      "org.opencontainers.image.authors": 'Jan-Otto Kröpke https://github.com/jkroepke/'
+      "org.opencontainers.image.created": '{{.Date}}'
+      "org.opencontainers.image.description": 'Tools to help with self signed cert generation for Kubernetes test environment.'
+      "org.opencontainers.image.licenses": 'Apache-2.0'
+      "org.opencontainers.image.revision": '{{.FullCommit}}'
+      "org.opencontainers.image.source": 'https://github.com/jkroepke/kube-webhook-certgen'
+      "org.opencontainers.image.title": '{{.ProjectName}}'
+      "org.opencontainers.image.vendor": 'Jan-Otto Kröpke'
+      "org.opencontainers.image.version": '{{.Version}}'
+    platforms:
+      - linux/amd64
+      - linux/arm64
+      - linux/s390x
+
+docker_signs:
+  - artifacts: ''
+    output: true
+    cmd: cosign
+    env:
+      - COSIGN_EXPERIMENTAL=1
+    args:
+      - sign
+      - '--oidc-issuer={{if index .Env "CI"}}https://token.actions.githubusercontent.com{{else}}https://oauth2.sigstore.dev/auth{{end}}'
+      - '--yes'
+      - '${artifact}@${digest}'
+
+checksum:
+  name_template: "checksums.txt"
+
+report_sizes: true
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+gomod:
+  proxy: true
+
+release:
+  draft: true
+  replace_existing_draft: true
+  prerelease: auto
+
+changelog:
+  use: github-native
+
+sboms:
+  - artifacts: archive

@@ -26,6 +26,7 @@ builds:
 dockers_v2:
   - images:
       - ghcr.io/jkroepke/kube-webhook-certgen
+      - docker.io/jkroepke/kube-webhook-certgen
     tags:
       - '{{ .Version }}'
       - '{{ if and .Tag (not .Prerelease) (not .IsSnapshot) (ne .Branch "main") }}latest{{end}}'

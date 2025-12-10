@@ -5,7 +5,7 @@
     [
       "@semantic-release/exec",
       {
-        "publishCmd": "gh api --method POST -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' /repos/jkroepke/kube-webhook-certgen/git/refs -f 'ref=refs/tags/${nextRelease.gitTag}' -f 'sha=${nextRelease.gitHead}'"
+        "publishCmd": "gh workflow run tag.yml -f tag=${nextRelease.gitTag}"
       }
     ]
   ]

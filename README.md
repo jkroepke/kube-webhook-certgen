@@ -106,8 +106,8 @@ Contributions welcome! Please read our [Code of Conduct](CODE_OF_CONDUCT.md) and
 
 ## Related Projects
 
-* [martin-helmich/prometheus-nginxlog-exporter](https://github.com/martin-helmich/prometheus-nginxlog-exporter).
-* [ozonru/accesslog-exporter](https://github.com/ozonru/accesslog-exporter)
+* [ingress-nginx/kube-webhook-certgen](https://github.com/kubernetes/ingress-nginx/tree/main/images/kube-webhook-certgen).
+* [jet/kube-webhook-certgen](https://github.com/jet/kube-webhook-certgen)
 
 ## Copyright and license
 

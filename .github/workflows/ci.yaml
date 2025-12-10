@@ -155,10 +155,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
 
+      - name: Install dependencies
+        run: npm i -g semantic-release @semantic-release/exec
+
       - name: Release
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: npx -y semantic-release
+        run: npx semantic-release
 
   publish:
     name: Publish package

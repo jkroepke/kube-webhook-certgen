@@ -49,7 +49,7 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags()
-	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level: panic|fatal|error|warn|info|debug|trace")
+	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level: error|warn|info|debug")
 	rootCmd.PersistentFlags().StringVar(&cfg.logfmt, "log-format", "json", "Log format: text|json")
 	rootCmd.PersistentFlags().StringVar(&cfg.kubeconfig, "kubeconfig", "", "Path to kubeconfig file: e.g. ~/.kube/kind-config-kind")
 }

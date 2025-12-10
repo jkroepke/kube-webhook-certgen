@@ -45,7 +45,7 @@ Flags:
   -h, --help                help for kube-webhook-certgen
       --kubeconfig string   Path to kubeconfig file: e.g. ~/.kube/kind-config-kind
       --log-format string   Log format: text|json (default "text")
-      --log-level string    Log level: panic|fatal|error|warn|info|debug|trace (default "info")
+      --log-level string    Log level: error|warn|info|debug (default "info")
 ```
 
 ### Create
@@ -66,7 +66,7 @@ Flags:
 Global Flags:
       --kubeconfig string   Path to kubeconfig file: e.g. ~/.kube/kind-config-kind
       --log-format string   Log format: text|json (default "json")
-      --log-level string    Log level: panic|fatal|error|warn|info|debug|trace (default "info")
+      --log-level string    Log level: error|warn|info|debug (default "info")
 ```
 
 ### Patch
@@ -88,7 +88,7 @@ Flags:
 Global Flags:
       --kubeconfig string   Path to kubeconfig file: e.g. ~/.kube/kind-config-kind
       --log-format string   Log format: text|json (default "text")
-      --log-level string    Log level: panic|fatal|error|warn|info|debug|trace (default "info")
+      --log-level string    Log level: error|warn|info|debug (default "info")
 ```
 
 ## Known Users

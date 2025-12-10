@@ -146,7 +146,7 @@ func Test_Patch(t *testing.T) {
 
 		patcher := testPatcher()
 		patcher.patchObjects = func(_ context.Context, options k8s.PatchOptions) error {
-			if options.FailurePolicyType == "" || options.FailurePolicyType != "Fail" {
+			if options.FailurePolicyType != "Fail" {
 				return fmt.Errorf("unexpected policy: %q", options.FailurePolicyType)
 			}
 
@@ -174,8 +174,8 @@ func Test_Patch(t *testing.T) {
 
 			return nil
 		}
-		patcher.getCaFromSecret = func(context.Context, string, string) []byte {
-			return expectedCA
+		patcher.getCaFromSecret = func(context.Context, string, string) ([]byte, error) {
+			return expectedCA, nil
 		}
 		config.Patcher = patcher
 
@@ -201,14 +201,12 @@ func Test_Patch(t *testing.T) {
 			},
 			"ca_certificate_from_secret_is_empty": func(c *cmd.PatchConfig) {
 				patcher := testPatcher()
-				patcher.getCaFromSecret = func(_ context.Context, _, _ string) []byte {
-					return nil
+				patcher.getCaFromSecret = func(_ context.Context, _, _ string) ([]byte, error) {
+					return nil, nil
 				}
 				c.Patcher = patcher
 			},
 		} {
-			mutateF := mutateF
-
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
@@ -225,14 +223,14 @@ func Test_Patch(t *testing.T) {
 
 type patcher struct {
 	patchObjects    func(context.Context, k8s.PatchOptions) error
-	getCaFromSecret func(context.Context, string, string) []byte
+	getCaFromSecret func(context.Context, string, string) ([]byte, error)
 }
 
 func (p *patcher) PatchObjects(ctx context.Context, options k8s.PatchOptions) error {
 	return p.patchObjects(ctx, options)
 }
 
-func (p *patcher) GetCaFromSecret(ctx context.Context, secretName, namespace string) []byte {
+func (p *patcher) GetCaFromSecret(ctx context.Context, secretName, namespace string) ([]byte, error) {
 	return p.getCaFromSecret(ctx, secretName, namespace)
 }
 
@@ -241,7 +239,7 @@ func testPatcher() *patcher {
 		patchObjects: func(context.Context, k8s.PatchOptions) error {
 			return nil
 		},
-		getCaFromSecret: func(context.Context, string, string) []byte { return []byte{} },
+		getCaFromSecret: func(context.Context, string, string) ([]byte, error) { return make([]byte, 0), nil },
 	}
 }
 

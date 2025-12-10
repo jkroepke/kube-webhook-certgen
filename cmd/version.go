@@ -14,7 +14,8 @@ var version = &cobra.Command{
 	Run:   versionCmdRun,
 }
 
-func versionCmdRun(cmd *cobra.Command, args []string) {
+//nolint:forbidigo
+func versionCmdRun(_ *cobra.Command, _ []string) {
 	fmt.Printf("%s\n", core.Version)
 	fmt.Printf("build %s\n", core.BuildTime)
 	fmt.Printf("%s\n", runtime.Version())

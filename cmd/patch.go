@@ -4,62 +4,62 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/jkroepke/kube-webhook-certgen/pkg/k8s"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 )
 
 var patch = &cobra.Command{
-	Use:    "patch",
-	Short:  "Patch a ValidatingWebhookConfiguration, MutatingWebhookConfiguration or APIService 'object-name' by using the ca from 'secret-name' in 'namespace'",
-	Long:   "Patch a ValidatingWebhookConfiguration, MutatingWebhookConfiguration or APIService 'object-name' by using the ca from 'secret-name' in 'namespace'",
-	PreRun: configureLogging,
-	Run:    patchCommand,
+	Use:     "patch",
+	Short:   "Patch a ValidatingWebhookConfiguration, MutatingWebhookConfiguration or APIService 'object-name' by using the ca from 'secret-name' in 'namespace'",
+	Long:    "Patch a ValidatingWebhookConfiguration, MutatingWebhookConfiguration or APIService 'object-name' by using the ca from 'secret-name' in 'namespace'",
+	PreRunE: configureLogging,
+	RunE:    patchCommand,
 }
 
 type PatchConfig struct {
-	PatchMutating      bool
-	PatchValidating    bool
+	Patcher            Patcher
 	PatchFailurePolicy string
 	APIServiceName     string
 	WebhookName        string
-
-	SecretName string
-	Namespace  string
-
-	Patcher Patcher
+	SecretName         string
+	Namespace          string
+	PatchMutating      bool
+	PatchValidating    bool
 }
 
 type Patcher interface {
 	PatchObjects(ctx context.Context, options k8s.PatchOptions) error
-	GetCaFromSecret(ctx context.Context, secretName, namespace string) []byte
+	GetCaFromSecret(ctx context.Context, secretName, namespace string) ([]byte, error)
 }
 
+//nolint:cyclop
 func Patch(ctx context.Context, cfg *PatchConfig) error {
 	if cfg.Patcher == nil {
-		return fmt.Errorf("no patcher defined")
+		return errors.New("no patcher defined")
 	}
 
 	if !cfg.PatchMutating && !cfg.PatchValidating && cfg.APIServiceName == "" {
-		return fmt.Errorf("patch-validating=false, patch-mutating=false. You must patch at least one kind of webhook, otherwise this command is a no-op")
+		return errors.New("patch-validating=false, patch-mutating=false. You must patch at least one kind of webhook, otherwise this command is a no-op")
 	}
 
 	var failurePolicy admissionv1.FailurePolicyType
 
 	switch cfg.PatchFailurePolicy {
 	case "":
-		break
 	case "Ignore":
 	case "Fail":
 		failurePolicy = admissionv1.FailurePolicyType(cfg.PatchFailurePolicy)
-		break
 	default:
 		return fmt.Errorf("patch-failure-policy %s is not valid", cfg.PatchFailurePolicy)
 	}
 
-	ca := cfg.Patcher.GetCaFromSecret(ctx, cfg.SecretName, cfg.Namespace)
+	ca, err := cfg.Patcher.GetCaFromSecret(ctx, cfg.SecretName, cfg.Namespace)
+	if err != nil {
+		return fmt.Errorf("failed to get ca from secret '%s' in namespace '%s': %w", cfg.SecretName, cfg.Namespace, err)
+	}
 
 	if ca == nil {
 		return fmt.Errorf("no secret with '%s' in '%s'", cfg.SecretName, cfg.Namespace)
@@ -79,11 +79,23 @@ func Patch(ctx context.Context, cfg *PatchConfig) error {
 		options.ValidatingWebhookConfigurationName = cfg.WebhookName
 	}
 
-	return cfg.Patcher.PatchObjects(ctx, options)
+	if err := cfg.Patcher.PatchObjects(ctx, options); err != nil {
+		return fmt.Errorf("failed to patch objects: %w", err)
+	}
+
+	return nil
 }
 
-func patchCommand(_ *cobra.Command, _ []string) {
-	client, aggregationClient := newKubernetesClients(cfg.kubeconfig)
+func patchCommand(_ *cobra.Command, _ []string) error {
+	client, aggregationClient, err := newKubernetesClients(cfg.kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kubernetes client: %w", err)
+	}
+
+	patcher, err := k8s.New(client, aggregationClient)
+	if err != nil {
+		return fmt.Errorf("failed to create patcher: %w", err)
+	}
 
 	config := &PatchConfig{
 		SecretName:         cfg.secretName,
@@ -93,20 +105,23 @@ func patchCommand(_ *cobra.Command, _ []string) {
 		PatchFailurePolicy: cfg.patchFailurePolicy,
 		APIServiceName:     cfg.apiServiceName,
 		WebhookName:        cfg.webhookName,
-		Patcher:            k8s.New(client, aggregationClient),
+		Patcher:            patcher,
 	}
 
-	ctx := context.TODO()
-
-	if err := Patch(ctx, config); err != nil {
+	if err := Patch(context.Background(), config); err != nil {
 		if wrappedErr := errors.Unwrap(err); wrappedErr != nil {
-			log.WithField("err", wrappedErr).Fatal(err.Error())
+			err = wrappedErr
 		}
 
-		log.Fatal(err.Error())
+		return fmt.Errorf("failed to patch webhooks: %w", err)
 	}
+
+	slog.Info("successfully patched webhooks")
+
+	return nil
 }
 
+//nolint:lll
 func init() {
 	rootCmd.AddCommand(patch)
 	patch.Flags().StringVar(&cfg.secretName, "secret-name", "", "Name of the secret where certificate information will be read from")
@@ -116,6 +131,7 @@ func init() {
 	patch.Flags().BoolVar(&cfg.patchValidating, "patch-validating", true, "If true, patch ValidatingWebhookConfiguration")
 	patch.Flags().BoolVar(&cfg.patchMutating, "patch-mutating", true, "If true, patch MutatingWebhookConfiguration")
 	patch.Flags().StringVar(&cfg.patchFailurePolicy, "patch-failure-policy", "", "If set, patch the webhooks with this failure policy. Valid options are Ignore or Fail")
-	patch.MarkFlagRequired("secret-name")
-	patch.MarkFlagRequired("namespace")
+
+	_ = patch.MarkFlagRequired("secret-name")
+	_ = patch.MarkFlagRequired("namespace")
 }

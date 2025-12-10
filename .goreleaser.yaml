@@ -30,8 +30,6 @@ dockers_v2:
       - '{{ .Version }}'
       - '{{ if and .Tag (not .Prerelease) (not .IsSnapshot) (ne .Branch "main") }}latest{{end}}'
       - '{{ if eq .Branch "main" }}main{{end}}'
-    extra_files:
-      - packaging/etc/kube-webhook-certgen/config.yaml
     labels:
       "org.opencontainers.image.authors": 'Jan-Otto Kröpke https://github.com/jkroepke/'
       "org.opencontainers.image.created": '{{.Date}}'

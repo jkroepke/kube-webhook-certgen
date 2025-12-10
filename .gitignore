@@ -21,8 +21,8 @@ tests/*
 !tests/systemd/
 tests/systemd/prometheus-nginx-exporter.conf
 
-/access-log-exporter
-/access-log-exporter.exe
+/kube-webhook-certgen
+/kube-webhook-certgen.exe
 dist/
 bin/
 

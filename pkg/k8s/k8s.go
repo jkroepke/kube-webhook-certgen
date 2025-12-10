@@ -200,13 +200,10 @@ func (k8s *k8s) patchValidating(ctx context.Context, configurationName string, c
 		return fmt.Errorf("failed getting validating webhook: %w", err)
 	}
 
-	kind := "ValidatingWebhookConfiguration"
-	apiVersion := "admissionregistration.k8s.io/v1"
-
 	applyConfig := &admissionapplyv1.ValidatingWebhookConfigurationApplyConfiguration{
 		TypeMetaApplyConfiguration: meta.TypeMetaApplyConfiguration{
-			Kind:       &kind,
-			APIVersion: &apiVersion,
+			Kind:       ptr("ValidatingWebhookConfiguration"),
+			APIVersion: ptr("admissionregistration.k8s.io/v1"),
 		},
 		ObjectMetaApplyConfiguration: &meta.ObjectMetaApplyConfiguration{
 			Name: &configurationName,
@@ -247,13 +244,10 @@ func (k8s *k8s) patchMutating(ctx context.Context, configurationName string, ca 
 		return fmt.Errorf("failed getting mutating webhook: %w", err)
 	}
 
-	kind := "MutatingWebhookConfigurations"
-	apiVersion := "admissionregistration.k8s.io/v1"
-
 	applyConfig := &admissionapplyv1.MutatingWebhookConfigurationApplyConfiguration{
 		TypeMetaApplyConfiguration: meta.TypeMetaApplyConfiguration{
-			Kind:       &kind,
-			APIVersion: &apiVersion,
+			Kind:       ptr("MutatingWebhookConfigurations"),
+			APIVersion: ptr("admissionregistration.k8s.io/v1"),
 		},
 		ObjectMetaApplyConfiguration: &meta.ObjectMetaApplyConfiguration{
 			Name: &configurationName,
@@ -295,4 +289,8 @@ func (k8s *k8s) patchMutating(ctx context.Context, configurationName string, ca 
 	slog.DebugContext(ctx, "patched mutating hook")
 
 	return nil
+}
+
+func ptr(s string) *string {
+	return &s
 }

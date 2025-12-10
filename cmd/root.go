@@ -25,6 +25,7 @@ var (
 		host               string
 		logfmt             string
 		secretName         string
+		secretType         string
 		namespace          string
 		certName           string
 		keyName            string

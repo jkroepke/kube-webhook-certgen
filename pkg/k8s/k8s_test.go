@@ -21,6 +21,7 @@ import (
 const (
 	testWebhookName    = "c7c95710-d8c3-4cc3-a2a8-8d2b46909c76"
 	testSecretName     = "15906410-af2a-4f9b-8a2d-c08ffdd5e129"
+	testSecretType     = "kubernetes.io/tls"
 	testAPIServiceName = "37f6a2d1-b401-4275-833b-9ff5004f0301"
 	testNamespace      = "7cad5f92-c0d5-4bc9-87a3-6f44d5a5619d"
 )
@@ -55,7 +56,8 @@ func TestGetCaFromCertificate(t *testing.T) {
 			Name:      testSecretName,
 			Namespace: testNamespace,
 		},
-		Data: map[string][]byte{"ca": ca, "cert": cert, "key": key},
+		Type: testSecretType,
+		Data: map[string][]byte{"ca.crt": ca, "tls.crt": cert, "tls.key": key},
 	}
 
 	k := newTestSimpleK8s(secret)
@@ -77,18 +79,14 @@ func TestSaveCertsToSecret(t *testing.T) {
 
 	ctx := contextWithDeadline(t)
 
-	err := k.SaveCertsToSecret(ctx, testSecretName, testNamespace, "cert", "key", ca, cert, key)
+	err := k.SaveCertsToSecret(ctx, testSecretName, testSecretType, testNamespace, "tls.crt", "tls.key", ca, cert, key)
 	require.NoError(t, err)
 
 	secret, _ := k.clientSet.CoreV1().Secrets(testNamespace).Get(ctx, testSecretName, metav1.GetOptions{})
 
-	if !bytes.Equal(secret.Data["cert"], cert) {
-		t.Error("'cert' saved data does not match retrieved")
-	}
-
-	if !bytes.Equal(secret.Data["key"], key) {
-		t.Error("'key' saved data does not match retrieved")
-	}
+	require.Equal(t, testSecretType, string(secret.Type))
+	require.Equal(t, string(cert), string(secret.Data["tls.crt"]))
+	require.Equal(t, string(key), string(secret.Data["tls.key"]))
 }
 
 func TestSaveThenLoadSecret(t *testing.T) {
@@ -98,15 +96,13 @@ func TestSaveThenLoadSecret(t *testing.T) {
 	ca, cert, key := genSecretData()
 	ctx := contextWithDeadline(t)
 
-	err := k.SaveCertsToSecret(ctx, testSecretName, testNamespace, "cert", "key", ca, cert, key)
+	err := k.SaveCertsToSecret(ctx, testSecretName, testSecretType, testNamespace, "tls.crt", "tls.key", ca, cert, key)
 	require.NoError(t, err)
 
 	retrievedCert, err := k.GetCaFromSecret(ctx, testSecretName, testNamespace)
 	require.NoError(t, err)
 
-	if !bytes.Equal(retrievedCert, ca) {
-		t.Error("Was not able to retrieve CA information that was saved")
-	}
+	require.Equal(t, string(ca), string(retrievedCert))
 }
 
 func TestPatchWebhookConfigurations(t *testing.T) {
@@ -354,7 +350,8 @@ func testK8sWithUnpatchedObjects() *k8s {
 			Name:      testSecretName,
 			Namespace: testNamespace,
 		},
-		Data: map[string][]byte{"ca": ca, "cert": cert, "key": key},
+		Type: testSecretType,
+		Data: map[string][]byte{"ca.crt": ca, "tls.crt": cert, "tls.key": key},
 	}
 
 	validatingWebhook := &admissionv1.ValidatingWebhookConfiguration{

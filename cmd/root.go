@@ -71,12 +71,12 @@ func newKubernetesClients(kubeconfig string) (kubernetes.Interface, clientset.In
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %w", err)
 	}
 
-	aggregatorClientset, err := clientset.NewForConfig(config)
+	aggregatorClientSet, err := clientset.NewForConfig(config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating kubernetes aggregator client: %w", err)
 	}
 
-	return c, aggregatorClientset, nil
+	return c, aggregatorClientSet, nil
 }
 
 func configureLogging(_ *cobra.Command, _ []string) error {

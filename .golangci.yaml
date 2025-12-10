@@ -6,10 +6,14 @@ linters:
     - err113
     - exhaustruct
     - funlen
+    - gochecknoinits
+    - gochecknoglobals
     - ireturn
     - mnd
     - noinlineerr
     - recvcheck
+    - testpackage
+    - varnamelen
     - wsl
   settings:
     forbidigo:
@@ -86,7 +90,6 @@ linters:
         - name: range-val-in-closure
         - name: receiver-naming
         - name: redefines-builtin-id
-        - name: redundant-import-alias
         - name: string-format
           arguments:
             - - fmt.Errorf[0],errors.New[0]
@@ -119,7 +122,7 @@ linters:
       no-mixed-args: true
       kv-only: false
       attr-only: true
-      no-global: all
+      no-global: ""
       context: scope
       static-msg: false
       no-raw-keys: false

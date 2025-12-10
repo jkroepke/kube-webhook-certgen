@@ -1,7 +1,6 @@
 package certs
 
 import (
-	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -9,19 +8,22 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func handler(w http.ResponseWriter, _ *http.Request) {
 	_, _ = fmt.Fprintf(w, "Hello World")
 }
 
 func TestCertificateCreation(t *testing.T) {
-	ca, cert, key := GenerateCerts("localhost")
+	t.Parallel()
+
+	ca, cert, key, err := GenerateCerts("localhost")
+	require.NoError(t, err)
 
 	c, err := tls.X509KeyPair(cert, key)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(ca)
@@ -30,33 +32,31 @@ func TestCertificateCreation(t *testing.T) {
 		TLSClientConfig: &tls.Config{
 			RootCAs:    caCertPool,
 			ServerName: "localhost",
+			MinVersion: tls.VersionTLS12,
 		},
 	}
 
 	ts := httptest.NewUnstartedServer(http.HandlerFunc(handler))
-	ts.TLS = &tls.Config{Certificates: []tls.Certificate{c}}
+	ts.TLS = &tls.Config{
+		Certificates: []tls.Certificate{c},
+		MinVersion:   tls.VersionTLS12,
+	}
+
 	ts.StartTLS()
 	defer ts.Close()
 
 	client := &http.Client{Transport: tr}
-	res, err := client.Get(ts.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		t.Errorf("Response code was %v; want 200", res.StatusCode)
-	}
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, ts.URL, nil)
+	require.NoError(t, err)
+
+	res, err := client.Do(req)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusOK, res.StatusCode)
 
 	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	expected := []byte("Hello World")
-
-	if bytes.Compare(expected, body) != 0 {
-		t.Errorf("Response body was '%v'; want '%v'", expected, body)
-	}
+	require.NoError(t, err)
+	require.Equal(t, []byte("Hello World"), body)
+	require.NoError(t, res.Body.Close())
 }

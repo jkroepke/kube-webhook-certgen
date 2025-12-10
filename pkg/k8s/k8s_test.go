@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,28 +25,29 @@ const (
 	testNamespace      = "7cad5f92-c0d5-4bc9-87a3-6f44d5a5619d"
 )
 
-var (
-	fail   = admissionv1.Fail
-	ignore = admissionv1.Ignore
-)
+var fail = admissionv1.Fail
 
-func genSecretData() (ca, cert, key []byte) {
-	ca = make([]byte, 4)
-	cert = make([]byte, 4)
-	key = make([]byte, 4)
-	rand.Read(cert)
-	rand.Read(key)
-	return
+func genSecretData() ([]byte, []byte, []byte) {
+	ca := make([]byte, 4)
+	cert := make([]byte, 4)
+	key := make([]byte, 4)
+
+	_, _ = rand.Read(cert)
+	_, _ = rand.Read(key)
+
+	return ca, cert, key
 }
 
 func newTestSimpleK8s(objects ...runtime.Object) *k8s {
 	return &k8s{
-		clientset:           fake.NewSimpleClientset(objects...),
-		aggregatorClientset: aggregatorfake.NewSimpleClientset(),
+		clientSet:           fake.NewSimpleClientset(objects...),
+		aggregatorClientSet: aggregatorfake.NewSimpleClientset(),
 	}
 }
 
 func TestGetCaFromCertificate(t *testing.T) {
+	t.Parallel()
+
 	ca, cert, key := genSecretData()
 
 	secret := &v1.Secret{
@@ -58,22 +60,27 @@ func TestGetCaFromCertificate(t *testing.T) {
 
 	k := newTestSimpleK8s(secret)
 
-	retrievedCa := k.GetCaFromSecret(contextWithDeadline(t), testSecretName, testNamespace)
+	retrievedCa, err := k.GetCaFromSecret(contextWithDeadline(t), testSecretName, testNamespace)
+	require.NoError(t, err)
+
 	if !bytes.Equal(retrievedCa, ca) {
 		t.Error("Was not able to retrieve CA information that was saved")
 	}
 }
 
 func TestSaveCertsToSecret(t *testing.T) {
+	t.Parallel()
+
 	k := newTestSimpleK8s()
 
 	ca, cert, key := genSecretData()
 
 	ctx := contextWithDeadline(t)
 
-	k.SaveCertsToSecret(ctx, testSecretName, testNamespace, "cert", "key", ca, cert, key)
+	err := k.SaveCertsToSecret(ctx, testSecretName, testNamespace, "cert", "key", ca, cert, key)
+	require.NoError(t, err)
 
-	secret, _ := k.clientset.CoreV1().Secrets(testNamespace).Get(ctx, testSecretName, metav1.GetOptions{})
+	secret, _ := k.clientSet.CoreV1().Secrets(testNamespace).Get(ctx, testSecretName, metav1.GetOptions{})
 
 	if !bytes.Equal(secret.Data["cert"], cert) {
 		t.Error("'cert' saved data does not match retrieved")
@@ -85,17 +92,26 @@ func TestSaveCertsToSecret(t *testing.T) {
 }
 
 func TestSaveThenLoadSecret(t *testing.T) {
+	t.Parallel()
+
 	k := newTestSimpleK8s()
 	ca, cert, key := genSecretData()
 	ctx := contextWithDeadline(t)
-	k.SaveCertsToSecret(ctx, testSecretName, testNamespace, "cert", "key", ca, cert, key)
-	retrievedCert := k.GetCaFromSecret(ctx, testSecretName, testNamespace)
+
+	err := k.SaveCertsToSecret(ctx, testSecretName, testNamespace, "cert", "key", ca, cert, key)
+	require.NoError(t, err)
+
+	retrievedCert, err := k.GetCaFromSecret(ctx, testSecretName, testNamespace)
+	require.NoError(t, err)
+
 	if !bytes.Equal(retrievedCert, ca) {
 		t.Error("Was not able to retrieve CA information that was saved")
 	}
 }
 
 func TestPatchWebhookConfigurations(t *testing.T) {
+	t.Parallel()
+
 	ca, _, _ := genSecretData()
 
 	k := newTestSimpleK8s(
@@ -121,7 +137,7 @@ func TestPatchWebhookConfigurations(t *testing.T) {
 		t.Fatalf("Unexpected error patching webhooks: %s: %v", err.Error(), errors.Unwrap(err))
 	}
 
-	whmut, err := k.clientset.
+	whmut, err := k.clientSet.
 		AdmissionregistrationV1().
 		MutatingWebhookConfigurations().
 		Get(ctx, testWebhookName, metav1.GetOptions{})
@@ -129,7 +145,7 @@ func TestPatchWebhookConfigurations(t *testing.T) {
 		t.Error(err)
 	}
 
-	whval, err := k.clientset.
+	whval, err := k.clientSet.
 		AdmissionregistrationV1().
 		MutatingWebhookConfigurations().
 		Get(ctx, testWebhookName, metav1.GetOptions{})
@@ -140,24 +156,31 @@ func TestPatchWebhookConfigurations(t *testing.T) {
 	if !bytes.Equal(whmut.Webhooks[0].ClientConfig.CABundle, ca) {
 		t.Error("Ca retrieved from first mutating webhook configuration does not match")
 	}
+
 	if !bytes.Equal(whmut.Webhooks[1].ClientConfig.CABundle, ca) {
 		t.Error("Ca retrieved from second mutating webhook configuration does not match")
 	}
+
 	if !bytes.Equal(whval.Webhooks[0].ClientConfig.CABundle, ca) {
 		t.Error("Ca retrieved from first validating webhook configuration does not match")
 	}
+
 	if !bytes.Equal(whval.Webhooks[1].ClientConfig.CABundle, ca) {
 		t.Error("Ca retrieved from second validating webhook configuration does not match")
 	}
+
 	if whmut.Webhooks[0].FailurePolicy == nil {
 		t.Errorf("Expected first mutating webhook failure policy to be set to %s", fail)
 	}
+
 	if whmut.Webhooks[1].FailurePolicy == nil {
 		t.Errorf("Expected second mutating webhook failure policy to be set to %s", fail)
 	}
+
 	if whval.Webhooks[0].FailurePolicy == nil {
 		t.Errorf("Expected first validating webhook failure policy to be set to %s", fail)
 	}
+
 	if whval.Webhooks[1].FailurePolicy == nil {
 		t.Errorf("Expected second validating webhook failure policy to be set to %s", fail)
 	}
@@ -244,7 +267,8 @@ func Test_Patching_objects(t *testing.T) {
 			t.Fatalf("Unexpected error while patching objects: %v", err)
 		}
 
-		c := k.aggregatorClientset.ApiregistrationV1().APIServices()
+		c := k.aggregatorClientSet.ApiregistrationV1().APIServices()
+
 		apiService, err := c.Get(ctx, testAPIServiceName, metav1.GetOptions{})
 		if err != nil {
 			t.Fatalf("Unexpected error while getting APIService object %q: %v", testAPIServiceName, err)
@@ -353,7 +377,7 @@ func testK8sWithUnpatchedObjects() *k8s {
 	}
 
 	return &k8s{
-		clientset:           fake.NewSimpleClientset(secret, validatingWebhook, mutatingWebhook),
-		aggregatorClientset: aggregatorfake.NewSimpleClientset(apiService),
+		clientSet:           fake.NewSimpleClientset(secret, validatingWebhook, mutatingWebhook),
+		aggregatorClientSet: aggregatorfake.NewSimpleClientset(apiService),
 	}
 }

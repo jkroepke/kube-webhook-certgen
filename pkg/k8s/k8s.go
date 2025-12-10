@@ -60,9 +60,9 @@ func (k8s *k8s) GetCaFromSecret(ctx context.Context, secretName, namespace strin
 		return nil, fmt.Errorf("error getting secret: %w", err)
 	}
 
-	data := secret.Data["ca"]
+	data := secret.Data["ca.crt"]
 	if data == nil {
-		return nil, errors.New("got secret, but it did not contain a 'ca' key")
+		return nil, errors.New("got secret, but it did not contain a 'ca.crt' key")
 	}
 
 	return data, nil
@@ -109,13 +109,14 @@ func (k8s *k8s) PatchObjects(ctx context.Context, options PatchOptions) error {
 // SaveCertsToSecret saves the provided ca, cert and key into a secret in the specified namespace.
 //
 //nolint:revive
-func (k8s *k8s) SaveCertsToSecret(ctx context.Context, secretName, namespace, certName, keyName string, ca, cert, key []byte) error {
+func (k8s *k8s) SaveCertsToSecret(ctx context.Context, secretName, secretType, namespace, certName, keyName string, ca, cert, key []byte) error {
 	slog.DebugContext(ctx, fmt.Sprintf("saving to secret '%s' in namespace '%s'", secretName, namespace))
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: secretName,
 		},
-		Data: map[string][]byte{"ca": ca, certName: cert, keyName: key},
+		Type: v1.SecretType(secretType),
+		Data: map[string][]byte{"ca.crt": ca, certName: cert, keyName: key},
 	}
 
 	slog.DebugContext(ctx, "saving secret")

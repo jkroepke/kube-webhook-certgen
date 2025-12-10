@@ -5,7 +5,7 @@
     [
       "@semantic-release/exec",
       {
-        "publishCmd": "gh workflow run tag.yml -f tag=${nextRelease.gitTag}"
+        "publishCmd": "gh workflow run tag.yaml -f tag=${nextRelease.gitTag}"
       }
     ]
   ]

@@ -90,7 +90,7 @@ jobs:
         with:
           # renovate: github=golangci/golangci-lint
           version: v2.7.2
-          args: "--max-same-issues=0 --issues-exit-code=0"
+          args: "--max-same-issues=0"
 
   super-lint:
     name: super-lint

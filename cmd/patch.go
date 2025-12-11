@@ -139,5 +139,4 @@ func init() {
 
 	_ = patch.MarkFlagRequired("secret-name")
 	_ = patch.MarkFlagRequired("namespace")
-	_ = patch.MarkFlagRequired("patch-mode")
 }

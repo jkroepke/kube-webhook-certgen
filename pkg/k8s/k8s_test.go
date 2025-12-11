@@ -39,8 +39,8 @@ func genSecretData() ([]byte, []byte, []byte) {
 	return ca, cert, key
 }
 
-func newTestSimpleK8s(objects ...runtime.Object) *k8s {
-	return &k8s{
+func newTestSimpleK8s(objects ...runtime.Object) *K8s {
+	return &K8s{
 		clientSet:           fake.NewSimpleClientset(objects...),
 		aggregatorClientSet: aggregatorfake.NewSimpleClientset(),
 	}
@@ -129,7 +129,7 @@ func TestPatchWebhookConfigurations(t *testing.T) {
 
 	ctx := contextWithDeadline(t)
 
-	if err := k.patchWebhookConfigurations(ctx, testWebhookName, ca, fail, true, true); err != nil {
+	if err := k.patchWebhookConfigurations(ctx, testWebhookName, ca, fail, true, true, "update"); err != nil {
 		t.Fatalf("Unexpected error patching webhooks: %s: %v", err.Error(), errors.Unwrap(err))
 	}
 
@@ -257,6 +257,7 @@ func Test_Patching_objects(t *testing.T) {
 		o := PatchOptions{
 			APIServiceName: testAPIServiceName,
 			CABundle:       []byte("foo"),
+			PatchMethod:    "update",
 		}
 
 		if err := k.PatchObjects(ctx, o); err != nil {
@@ -299,6 +300,7 @@ func Test_Patching_objects(t *testing.T) {
 
 		o := PatchOptions{
 			ValidatingWebhookConfigurationName: testWebhookName,
+			PatchMethod:                        "update",
 		}
 
 		if err := k.PatchObjects(ctx, o); err != nil {
@@ -313,6 +315,7 @@ func Test_Patching_objects(t *testing.T) {
 
 		o := PatchOptions{
 			MutatingWebhookConfigurationName: testWebhookName,
+			PatchMethod:                      "update",
 		}
 
 		if err := k.PatchObjects(ctx, o); err != nil {
@@ -342,7 +345,7 @@ func contextWithDeadline(t *testing.T) context.Context {
 	return ctx
 }
 
-func testK8sWithUnpatchedObjects() *k8s {
+func testK8sWithUnpatchedObjects() *K8s {
 	ca, cert, key := genSecretData()
 
 	secret := &v1.Secret{
@@ -373,7 +376,7 @@ func testK8sWithUnpatchedObjects() *k8s {
 		},
 	}
 
-	return &k8s{
+	return &K8s{
 		clientSet:           fake.NewSimpleClientset(secret, validatingWebhook, mutatingWebhook),
 		aggregatorClientSet: aggregatorfake.NewSimpleClientset(apiService),
 	}

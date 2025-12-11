@@ -39,8 +39,8 @@ func genSecretData() ([]byte, []byte, []byte) {
 	return ca, cert, key
 }
 
-func newTestSimpleK8s(objects ...runtime.Object) *k8s {
-	return &k8s{
+func newTestSimpleK8s(objects ...runtime.Object) *K8s {
+	return &K8s{
 		clientSet:           fake.NewSimpleClientset(objects...),
 		aggregatorClientSet: aggregatorfake.NewSimpleClientset(),
 	}
@@ -345,7 +345,7 @@ func contextWithDeadline(t *testing.T) context.Context {
 	return ctx
 }
 
-func testK8sWithUnpatchedObjects() *k8s {
+func testK8sWithUnpatchedObjects() *K8s {
 	ca, cert, key := genSecretData()
 
 	secret := &v1.Secret{
@@ -376,7 +376,7 @@ func testK8sWithUnpatchedObjects() *k8s {
 		},
 	}
 
-	return &k8s{
+	return &K8s{
 		clientSet:           fake.NewSimpleClientset(secret, validatingWebhook, mutatingWebhook),
 		aggregatorClientSet: aggregatorfake.NewSimpleClientset(apiService),
 	}

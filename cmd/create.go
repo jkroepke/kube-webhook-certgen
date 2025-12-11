@@ -61,7 +61,7 @@ func init() {
 	create.Flags().StringVar(&cfg.secretName, "secret-name", "", "Name of the secret where certificate information will be written")
 	create.Flags().StringVar(&cfg.secretType, "secret-type", "Opaque", "Type of the secret where certificate information will be written")
 	create.Flags().StringVar(&cfg.namespace, "namespace", "", "Namespace of the secret where certificate information will be written")
-	create.Flags().StringVar(&cfg.caName, "ca-name", "ca", "Name of cert file in the secret")
+	create.Flags().StringVar(&cfg.caName, "ca-name", "ca", "Name of ca file in the secret")
 	create.Flags().StringVar(&cfg.certName, "cert-name", "cert", "Name of cert file in the secret")
 	create.Flags().StringVar(&cfg.keyName, "key-name", "key", "Name of key file in the secret")
 

@@ -26,6 +26,11 @@ The utility works in two parts, optimized to work better with the Helm provision
 This tool may not be adequate in all security environments. If a more complete solution is required, you may want to
 seek alternatives such as [jetstack/cert-manager](https://github.com/jetstack/cert-manager)
 
+## Image Location
+
+* Docker Hub: `docker.io/jkroepke/kube-webhook-certgen`
+* GitHub Container Registry: `ghcr.io/jkroepke/kube-webhook-certgen`
+
 ## Command line options
 ```
 Use this to create a ca and signed certificates and patch admission webhooks to allow for quick
@@ -56,12 +61,14 @@ Usage:
   kube-webhook-certgen create [flags]
 
 Flags:
+      --ca-name string       Name of ca file in the secret (default "ca")
       --cert-name string     Name of cert file in the secret (default "cert")
   -h, --help                 help for create
       --host string          Comma-separated hostnames and IPs to generate a certificate for
       --key-name string      Name of key file in the secret (default "key")
       --namespace string     Namespace of the secret where certificate information will be written
       --secret-name string   Name of the secret where certificate information will be written
+      --secret-type string   Type of the secret where certificate information will be written (default "Opaque")
 
 Global Flags:
       --kubeconfig string   Path to kubeconfig file: e.g. ~/.kube/kind-config-kind
@@ -71,23 +78,27 @@ Global Flags:
 
 ### Patch
 ```
-Patch a validatingwebhookconfiguration and mutatingwebhookconfiguration 'webhook-name' by using the ca from 'secret-name' in 'namespace'
+Patch a ValidatingWebhookConfiguration, MutatingWebhookConfiguration or APIService 'object-name' by using the ca from 'secret-name' in 'namespace'
 
 Usage:
   kube-webhook-certgen patch [flags]
 
 Flags:
+      --apiservice-name string        Name of APIService that will be patched
+      --ca-name string                Name of cert file in the secret (default "ca")
   -h, --help                          help for patch
       --namespace string              Namespace of the secret where certificate information will be read from
       --patch-failure-policy string   If set, patch the webhooks with this failure policy. Valid options are Ignore or Fail
-      --patch-mutating                If true, patch mutatingwebhookconfiguration (default true)
-      --patch-validating              If true, patch validatingwebhookconfiguration (default true)
+      --patch-mode string             Patch method to use: patch|update. patch uses server side apply, update uses a full object update (default "update")
+      --patch-mutating                If true, patch MutatingWebhookConfiguration (default true)
+      --patch-validating              If true, patch ValidatingWebhookConfiguration (default true)
       --secret-name string            Name of the secret where certificate information will be read from
-      --webhook-name string           Name of validatingwebhookconfiguration and mutatingwebhookconfiguration that will be updated
+      --secret-type string            Name of the secret where certificate information will be read from
+      --webhook-name string           Name of ValidatingWebhookConfiguration and MutatingWebhookConfiguration that will be updated
 
 Global Flags:
       --kubeconfig string   Path to kubeconfig file: e.g. ~/.kube/kind-config-kind
-      --log-format string   Log format: text|json (default "text")
+      --log-format string   Log format: text|json (default "json")
       --log-level string    Log level: error|warn|info|debug (default "info")
 ```
 

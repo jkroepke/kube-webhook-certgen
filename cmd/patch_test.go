@@ -174,7 +174,7 @@ func Test_Patch(t *testing.T) {
 
 			return nil
 		}
-		patcher.getCaFromSecret = func(context.Context, string, string) ([]byte, error) {
+		patcher.getCaFromSecret = func(context.Context, string, string, string) ([]byte, error) {
 			return expectedCA, nil
 		}
 		config.Patcher = patcher
@@ -201,7 +201,7 @@ func Test_Patch(t *testing.T) {
 			},
 			"ca_certificate_from_secret_is_empty": func(c *cmd.PatchConfig) {
 				patcher := testPatcher()
-				patcher.getCaFromSecret = func(_ context.Context, _, _ string) ([]byte, error) {
+				patcher.getCaFromSecret = func(_ context.Context, _, _, _ string) ([]byte, error) {
 					return nil, nil
 				}
 				c.Patcher = patcher
@@ -223,7 +223,7 @@ func Test_Patch(t *testing.T) {
 
 type patcher struct {
 	patchObjects    func(context.Context, k8s.PatchOptions) error
-	getCaFromSecret func(context.Context, string, string) ([]byte, error)
+	getCaFromSecret func(context.Context, string, string, string) ([]byte, error)
 }
 
 func (p *patcher) PatchObjects(ctx context.Context, options k8s.PatchOptions) error {
@@ -231,7 +231,7 @@ func (p *patcher) PatchObjects(ctx context.Context, options k8s.PatchOptions) er
 }
 
 func (p *patcher) GetCaFromSecret(ctx context.Context, caName, secretName, namespace string) ([]byte, error) {
-	return p.getCaFromSecret(ctx, secretName, namespace)
+	return p.getCaFromSecret(ctx, caName, secretName, namespace)
 }
 
 func testPatcher() *patcher {
@@ -239,7 +239,7 @@ func testPatcher() *patcher {
 		patchObjects: func(context.Context, k8s.PatchOptions) error {
 			return nil
 		},
-		getCaFromSecret: func(context.Context, string, string) ([]byte, error) { return make([]byte, 0), nil },
+		getCaFromSecret: func(context.Context, string, string, string) ([]byte, error) { return make([]byte, 0), nil },
 	}
 }
 

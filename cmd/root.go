@@ -29,6 +29,7 @@ var (
 		namespace          string
 		certName           string
 		keyName            string
+		caName             string
 		logLevel           string
 		apiServiceName     string
 		webhookName        string

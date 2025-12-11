@@ -32,7 +32,7 @@ func createCommand(_ *cobra.Command, _ []string) error {
 
 	ctx := context.TODO()
 
-	_, err = k.GetCaFromSecret(ctx, cfg.secretName, cfg.namespace)
+	_, err = k.GetCaFromSecret(ctx, "ca.crt", cfg.secretName, cfg.namespace)
 	switch {
 	case errors.Is(err, k8s.ErrNoSecret):
 		slog.Info("creating new secret")
@@ -42,7 +42,7 @@ func createCommand(_ *cobra.Command, _ []string) error {
 			return fmt.Errorf("failed to generate certs: %w", err)
 		}
 
-		err = k.SaveCertsToSecret(ctx, cfg.secretName, cfg.secretType, cfg.namespace, cfg.certName, cfg.keyName, newCa, newCert, newKey)
+		err = k.SaveCertsToSecret(ctx, cfg.secretName, cfg.secretType, cfg.namespace, cfg.caName, cfg.certName, cfg.keyName, newCa, newCert, newKey)
 		if err != nil {
 			return fmt.Errorf("failed to save certs to secret: %w", err)
 		}
@@ -61,6 +61,7 @@ func init() {
 	create.Flags().StringVar(&cfg.secretName, "secret-name", "", "Name of the secret where certificate information will be written")
 	create.Flags().StringVar(&cfg.secretType, "secret-type", "Opaque", "Type of the secret where certificate information will be written")
 	create.Flags().StringVar(&cfg.namespace, "namespace", "", "Namespace of the secret where certificate information will be written")
+	create.Flags().StringVar(&cfg.caName, "ca-name", "ca", "Name of cert file in the secret")
 	create.Flags().StringVar(&cfg.certName, "cert-name", "cert", "Name of cert file in the secret")
 	create.Flags().StringVar(&cfg.keyName, "key-name", "key", "Name of key file in the secret")
 

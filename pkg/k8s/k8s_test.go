@@ -62,7 +62,7 @@ func TestGetCaFromCertificate(t *testing.T) {
 
 	k := newTestSimpleK8s(secret)
 
-	retrievedCa, err := k.GetCaFromSecret(contextWithDeadline(t), testSecretName, testNamespace)
+	retrievedCa, err := k.GetCaFromSecret(contextWithDeadline(t), "ca.crt", testSecretName, testNamespace)
 	require.NoError(t, err)
 
 	if !bytes.Equal(retrievedCa, ca) {
@@ -79,7 +79,7 @@ func TestSaveCertsToSecret(t *testing.T) {
 
 	ctx := contextWithDeadline(t)
 
-	err := k.SaveCertsToSecret(ctx, testSecretName, testSecretType, testNamespace, "tls.crt", "tls.key", ca, cert, key)
+	err := k.SaveCertsToSecret(ctx, testSecretName, testSecretType, testNamespace, "ca.crt", "tls.crt", "tls.key", ca, cert, key)
 	require.NoError(t, err)
 
 	secret, _ := k.clientSet.CoreV1().Secrets(testNamespace).Get(ctx, testSecretName, metav1.GetOptions{})
@@ -96,10 +96,10 @@ func TestSaveThenLoadSecret(t *testing.T) {
 	ca, cert, key := genSecretData()
 	ctx := contextWithDeadline(t)
 
-	err := k.SaveCertsToSecret(ctx, testSecretName, testSecretType, testNamespace, "tls.crt", "tls.key", ca, cert, key)
+	err := k.SaveCertsToSecret(ctx, testSecretName, testSecretType, testNamespace, "ca.crt", "tls.crt", "tls.key", ca, cert, key)
 	require.NoError(t, err)
 
-	retrievedCert, err := k.GetCaFromSecret(ctx, testSecretName, testNamespace)
+	retrievedCert, err := k.GetCaFromSecret(ctx, "ca.crt", testSecretName, testNamespace)
 	require.NoError(t, err)
 
 	require.Equal(t, string(ca), string(retrievedCert))

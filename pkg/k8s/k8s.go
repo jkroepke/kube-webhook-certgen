@@ -54,7 +54,7 @@ var ErrNoSecret = errors.New("no secret found")
 // GetCaFromSecret retrieves the CA certificate from a Kubernetes secret.
 // Returns ErrNoSecret if the secret doesn't exist, or an error if the secret
 // exists but doesn't contain a 'ca.crt' key.
-func (k *K8s) GetCaFromSecret(ctx context.Context, secretName, namespace string) ([]byte, error) {
+func (k *K8s) GetCaFromSecret(ctx context.Context, caName, secretName, namespace string) ([]byte, error) {
 	slog.DebugContext(ctx, "getting CA from secret",
 		slog.String("secret", secretName),
 		slog.String("namespace", namespace),
@@ -69,9 +69,14 @@ func (k *K8s) GetCaFromSecret(ctx context.Context, secretName, namespace string)
 		return nil, fmt.Errorf("error getting secret: %w", err)
 	}
 
-	data := secret.Data["ca.crt"]
+	data := secret.Data[caName]
 	if data == nil {
-		return nil, errors.New("got secret, but it did not contain a 'ca.crt' key")
+		// Fallback to 'ca' for backward compatibility
+		data = secret.Data["ca"]
+
+		if data == nil {
+			return nil, fmt.Errorf("got secret, but it did not contain a '%s' key", caName)
+		}
 	}
 
 	return data, nil
@@ -151,7 +156,7 @@ func getWebhookName(options PatchOptions) string {
 // SaveCertsToSecret saves the provided CA, certificate and key into a secret in the specified namespace.
 //
 //nolint:revive
-func (k *K8s) SaveCertsToSecret(ctx context.Context, secretName, secretType, namespace, certName, keyName string, ca, cert, key []byte) error {
+func (k *K8s) SaveCertsToSecret(ctx context.Context, secretName, secretType, namespace, caName, certName, keyName string, ca, cert, key []byte) error {
 	slog.DebugContext(ctx, "saving certificates to secret",
 		slog.String("secret", secretName),
 		slog.String("namespace", namespace),
@@ -163,7 +168,7 @@ func (k *K8s) SaveCertsToSecret(ctx context.Context, secretName, secretType, nam
 		},
 		Type: v1.SecretType(secretType),
 		Data: map[string][]byte{
-			"ca.crt": ca,
+			caName:   ca,
 			certName: cert,
 			keyName:  key,
 		},

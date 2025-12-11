@@ -230,7 +230,7 @@ func (p *patcher) PatchObjects(ctx context.Context, options k8s.PatchOptions) er
 	return p.patchObjects(ctx, options)
 }
 
-func (p *patcher) GetCaFromSecret(ctx context.Context, secretName, namespace string) ([]byte, error) {
+func (p *patcher) GetCaFromSecret(ctx context.Context, caName, secretName, namespace string) ([]byte, error) {
 	return p.getCaFromSecret(ctx, secretName, namespace)
 }
 

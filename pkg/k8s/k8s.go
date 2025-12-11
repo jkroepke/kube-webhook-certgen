@@ -179,6 +179,7 @@ func (k8s *k8s) patchWebhookConfigurations(
 		slog.String("failure_policy", string(failurePolicy)),
 	)
 
+	//nolint:nestif
 	if patchValidating {
 		if patchMethod == "update" {
 			if err := k8s.updateValidating(ctx, configurationName, ca, failurePolicy); err != nil {

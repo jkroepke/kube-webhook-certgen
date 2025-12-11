@@ -129,7 +129,7 @@ func TestPatchWebhookConfigurations(t *testing.T) {
 
 	ctx := contextWithDeadline(t)
 
-	if err := k.patchWebhookConfigurations(ctx, testWebhookName, ca, fail, true, true); err != nil {
+	if err := k.patchWebhookConfigurations(ctx, testWebhookName, ca, fail, true, true, "update"); err != nil {
 		t.Fatalf("Unexpected error patching webhooks: %s: %v", err.Error(), errors.Unwrap(err))
 	}
 
@@ -257,6 +257,7 @@ func Test_Patching_objects(t *testing.T) {
 		o := PatchOptions{
 			APIServiceName: testAPIServiceName,
 			CABundle:       []byte("foo"),
+			PatchMethod:    "update",
 		}
 
 		if err := k.PatchObjects(ctx, o); err != nil {
@@ -299,6 +300,7 @@ func Test_Patching_objects(t *testing.T) {
 
 		o := PatchOptions{
 			ValidatingWebhookConfigurationName: testWebhookName,
+			PatchMethod:                        "update",
 		}
 
 		if err := k.PatchObjects(ctx, o); err != nil {
@@ -313,6 +315,7 @@ func Test_Patching_objects(t *testing.T) {
 
 		o := PatchOptions{
 			MutatingWebhookConfigurationName: testWebhookName,
+			PatchMethod:                      "update",
 		}
 
 		if err := k.PatchObjects(ctx, o); err != nil {

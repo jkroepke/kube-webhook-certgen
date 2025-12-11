@@ -40,6 +40,7 @@ type PatchOptions struct {
 	ValidatingWebhookConfigurationName string
 	MutatingWebhookConfigurationName   string
 	APIServiceName                     string
+	PatchMethod                        string
 	FailurePolicyType                  admissionregistrationv1.FailurePolicyType
 	CABundle                           []byte
 }
@@ -73,6 +74,11 @@ func (k8s *k8s) PatchObjects(ctx context.Context, options PatchOptions) error {
 	patchMutating := options.MutatingWebhookConfigurationName != ""
 	patchValidating := options.ValidatingWebhookConfigurationName != ""
 
+	//nolint:goconst
+	if options.PatchMethod != "patch" && options.PatchMethod != "update" {
+		return fmt.Errorf("invalid patch method '%s'", options.PatchMethod)
+	}
+
 	if !patchMutating && !patchValidating && options.FailurePolicyType != "" {
 		return errors.New("failurePolicy specified, but no webhook will be patched")
 	}
@@ -100,7 +106,7 @@ func (k8s *k8s) PatchObjects(ctx context.Context, options PatchOptions) error {
 	}
 
 	if patchMutating || patchValidating {
-		return k8s.patchWebhookConfigurations(ctx, webhookName, options.CABundle, options.FailurePolicyType, patchMutating, patchValidating)
+		return k8s.patchWebhookConfigurations(ctx, webhookName, options.CABundle, options.FailurePolicyType, patchMutating, patchValidating, options.PatchMethod)
 	}
 
 	return nil
@@ -164,6 +170,7 @@ func (k8s *k8s) patchWebhookConfigurations(
 	failurePolicy admissionregistrationv1.FailurePolicyType,
 	patchMutating,
 	patchValidating bool,
+	patchMethod string,
 ) error {
 	slog.InfoContext(ctx, "patching webhook configurations",
 		slog.String("configuration_name", configurationName),
@@ -173,6 +180,12 @@ func (k8s *k8s) patchWebhookConfigurations(
 	)
 
 	if patchValidating {
+		if patchMethod == "update" {
+			if err := k8s.updateValidating(ctx, configurationName, ca, failurePolicy); err != nil {
+				return err
+			}
+		}
+
 		if err := k8s.patchValidating(ctx, configurationName, ca, failurePolicy); err != nil {
 			// Intentionally don't wrap error here to preserve old behavior and be able to log both original error and a message.
 			return err
@@ -181,7 +194,14 @@ func (k8s *k8s) patchWebhookConfigurations(
 		slog.DebugContext(ctx, "validating hook patching not required")
 	}
 
+	//nolint:nestif
 	if patchMutating {
+		if patchMethod == "update" {
+			if err := k8s.updateMutating(ctx, configurationName, ca, failurePolicy); err != nil {
+				return err
+			}
+		}
+
 		if err := k8s.patchMutating(ctx, configurationName, ca, failurePolicy); err != nil {
 			// Intentionally don't wrap error here to preserve old behavior and be able to log both original error and a message.
 			return err
@@ -239,6 +259,35 @@ func (k8s *k8s) patchValidating(ctx context.Context, configurationName string, c
 	return nil
 }
 
+func (k8s *k8s) updateValidating(ctx context.Context, configurationName string, ca []byte, failurePolicy admissionregistrationv1.FailurePolicyType) error {
+	valHook, err := k8s.clientSet.
+		AdmissionregistrationV1().
+		ValidatingWebhookConfigurations().
+		Get(ctx, configurationName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed getting validating webhook: %w", err)
+	}
+
+	for i := range valHook.Webhooks {
+		h := &valHook.Webhooks[i]
+
+		h.ClientConfig.CABundle = ca
+		if failurePolicy != "" {
+			h.FailurePolicy = &failurePolicy
+		}
+	}
+
+	if _, err = k8s.clientSet.AdmissionregistrationV1().
+		ValidatingWebhookConfigurations().
+		Update(ctx, valHook, metav1.UpdateOptions{}); err != nil {
+		return fmt.Errorf("failed patching validating webhook: %w", err)
+	}
+
+	slog.DebugContext(ctx, "patched validating hook")
+
+	return nil
+}
+
 func (k8s *k8s) patchMutating(ctx context.Context, configurationName string, ca []byte, failurePolicy admissionregistrationv1.FailurePolicyType) error {
 	mutHook, err := k8s.clientSet.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(ctx, configurationName, metav1.GetOptions{})
 	if err != nil {
@@ -284,6 +333,35 @@ func (k8s *k8s) patchMutating(ctx context.Context, configurationName string, ca 
 		FieldManager: "kube-webhook-certgen",
 		Force:        true,
 	}); err != nil {
+		return fmt.Errorf("failed patching mutating webhook: %w", err)
+	}
+
+	slog.DebugContext(ctx, "patched mutating hook")
+
+	return nil
+}
+
+func (k8s *k8s) updateMutating(ctx context.Context, configurationName string, ca []byte, failurePolicy admissionregistrationv1.FailurePolicyType) error {
+	mutHook, err := k8s.clientSet.
+		AdmissionregistrationV1().
+		MutatingWebhookConfigurations().
+		Get(ctx, configurationName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed getting mutating webhook: %w", err)
+	}
+
+	for i := range mutHook.Webhooks {
+		h := &mutHook.Webhooks[i]
+
+		h.ClientConfig.CABundle = ca
+		if failurePolicy != "" {
+			h.FailurePolicy = &failurePolicy
+		}
+	}
+
+	if _, err = k8s.clientSet.AdmissionregistrationV1().
+		MutatingWebhookConfigurations().
+		Update(ctx, mutHook, metav1.UpdateOptions{}); err != nil {
 		return fmt.Errorf("failed patching mutating webhook: %w", err)
 	}
 

@@ -34,6 +34,7 @@ var (
 		webhookName        string
 		patchFailurePolicy string
 		kubeconfig         string
+		patchMethod        string
 		patchValidating    bool
 		patchMutating      bool
 	}{}

@@ -3,6 +3,7 @@
 [![Current Release](https://img.shields.io/github/release/jkroepke/kube-webhook-certgen.svg?logo=github)](https://github.com/jkroepke/kube-webhook-certgen/releases/latest)
 [![GitHub Repo stars](https://img.shields.io/github/stars/jkroepke/kube-webhook-certgen?style=flat&logo=github)](https://github.com/jkroepke/kube-webhook-certgen/stargazers)
 [![Docker Pulls](https://img.shields.io/docker/pulls/jkroepke/kube-webhook-certgen?logo=docker)](https://hub.docker.com/r/jkroepke/kube-webhook-certgen)
+[![ghcr.io Pulls](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fipitio.github.io%2Fbackage%2Fjkroepke%2Fkube-webhook-certgen%2Fkube-webhook-certgen.json&query=%24.downloads&logo=github&label=ghcr.io%20pulls)](https://github.com/jkroepke/kube-webhook-certgen/pkgs/container/kube-webhook-certgen)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jkroepke/kube-webhook-certgen)](https://goreportcard.com/report/github.com/jkroepke/kube-webhook-certgen)
 [![codecov](https://codecov.io/gh/jkroepke/kube-webhook-certgen/graph/badge.svg?token=TJRPHF5BVX)](https://codecov.io/gh/jkroepke/kube-webhook-certgen)
 

@@ -51,10 +51,10 @@ jobs:
           cache: 'true'
           cache-dependency-path: 'go.sum'
 
-      - uses: anchore/sbom-action/download-syft@a930d0ac434e3182448fe678398ba5713717112a # v0.21.0
+      - uses: anchore/sbom-action/download-syft@0b82b0b1a22399a1c542d4d656f70cd903571b5c # v0.21.1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+        uses: docker/setup-buildx-action@c7c4c00f3eef127be487a50899a220e44c6bcc87
 
       - name: go build (with goreleaser)
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
@@ -89,7 +89,7 @@ jobs:
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         with:
           # renovate: github=golangci/golangci-lint
-          version: v2.7.2
+          version: v2.8.0
           args: "--max-same-issues=0"
 
   super-lint:
@@ -189,7 +189,7 @@ jobs:
           cache: 'false'
           go-version-file: 'go.mod'
 
-      - uses: anchore/sbom-action/download-syft@a930d0ac434e3182448fe678398ba5713717112a # v0.21.0
+      - uses: anchore/sbom-action/download-syft@0b82b0b1a22399a1c542d4d656f70cd903571b5c # v0.21.1
 
       - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
@@ -207,7 +207,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+        uses: docker/setup-buildx-action@c7c4c00f3eef127be487a50899a220e44c6bcc87
 
       - name: Run GoReleaser
         id: goreleaser

@@ -54,7 +54,7 @@ jobs:
       - uses: anchore/sbom-action/download-syft@57aae528053a48a3f6235f2d9461b05fbcb7366d # v0.23.1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8016837eba79c3b51bf2025379f48b6fc50f1236
+        uses: docker/setup-buildx-action@d91f340399fb2345e3e45f5461e116862b08261d
 
       - name: go build (with goreleaser)
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
@@ -207,7 +207,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8016837eba79c3b51bf2025379f48b6fc50f1236
+        uses: docker/setup-buildx-action@d91f340399fb2345e3e45f5461e116862b08261d
 
       - name: Run GoReleaser
         id: goreleaser

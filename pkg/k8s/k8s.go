@@ -288,8 +288,8 @@ func (k *K8s) applyValidatingWebhook(ctx context.Context, configurationName stri
 
 	applyConfig := &admissionapplyv1.ValidatingWebhookConfigurationApplyConfiguration{
 		TypeMetaApplyConfiguration: meta.TypeMetaApplyConfiguration{
-			Kind:       ptr("ValidatingWebhookConfiguration"),
-			APIVersion: ptr("admissionregistration.k8s.io/v1"),
+			Kind:       new("ValidatingWebhookConfiguration"),
+			APIVersion: new("admissionregistration.k8s.io/v1"),
 		},
 		ObjectMetaApplyConfiguration: &meta.ObjectMetaApplyConfiguration{
 			Name: &configurationName,
@@ -361,8 +361,8 @@ func (k *K8s) applyMutatingWebhook(ctx context.Context, configurationName string
 
 	applyConfig := &admissionapplyv1.MutatingWebhookConfigurationApplyConfiguration{
 		TypeMetaApplyConfiguration: meta.TypeMetaApplyConfiguration{
-			Kind:       ptr("MutatingWebhookConfiguration"),
-			APIVersion: ptr("admissionregistration.k8s.io/v1"),
+			Kind:       new("MutatingWebhookConfiguration"),
+			APIVersion: new("admissionregistration.k8s.io/v1"),
 		},
 		ObjectMetaApplyConfiguration: &meta.ObjectMetaApplyConfiguration{
 			Name: &configurationName,
@@ -424,8 +424,4 @@ func (k *K8s) updateMutatingWebhook(ctx context.Context, configurationName strin
 	slog.DebugContext(ctx, "successfully updated mutating webhook configuration")
 
 	return nil
-}
-
-func ptr(s string) *string {
-	return &s
 }

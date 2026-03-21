@@ -41,8 +41,7 @@ func genSecretData() ([]byte, []byte, []byte) {
 
 func newTestSimpleK8s(objects ...runtime.Object) *K8s {
 	return &K8s{
-		clientSet: fake.NewClientset(objects...),
-		//nolint:staticcheck // SA1019: NewSimpleClientset is deprecated but NewClientset is not yet available for aggregator
+		clientSet:           fake.NewClientset(objects...),
 		aggregatorClientSet: aggregatorfake.NewSimpleClientset(),
 	}
 }
@@ -378,8 +377,7 @@ func testK8sWithUnpatchedObjects() *K8s {
 	}
 
 	return &K8s{
-		clientSet: fake.NewClientset(secret, validatingWebhook, mutatingWebhook),
-		//nolint:staticcheck // SA1019: NewSimpleClientset is deprecated but NewClientset is not yet available for aggregator
+		clientSet:           fake.NewClientset(secret, validatingWebhook, mutatingWebhook),
 		aggregatorClientSet: aggregatorfake.NewSimpleClientset(apiService),
 	}
 }

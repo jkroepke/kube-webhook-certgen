@@ -113,6 +113,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MULTI_STATUS: false
           LINTER_RULES_PATH: .
+          GITHUB_ACTIONS_ZIZMOR_CONFIG_FILE: ./.github/zizmor.yml
           VALIDATE_ALL_CODEBASE: true
           VALIDATE_BASH: true
           VALIDATE_BASH_EXEC: true
@@ -126,6 +127,7 @@ jobs:
           VALIDATE_NATURAL_LANGUAGE: true
           # VALIDATE_MARKDOWN: false
           VALIDATE_RENOVATE: true
+          VALIDATE_SPELL_CODESPELL: true
           VALIDATE_SHELL_SHFMT: true
           VALIDATE_XML: true
           VALIDATE_YAML: true

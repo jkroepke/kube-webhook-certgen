@@ -9,6 +9,8 @@ linters:
     - funlen
     - gochecknoinits
     - gochecknoglobals
+    - goconst
+    - gomodguard
     - ireturn
     - mnd
     - noinlineerr
@@ -177,6 +179,7 @@ linters:
           - dupword
           - funlen
           - gocognit
+          - goconst
           - gocyclo
           - lll
           - maintidx

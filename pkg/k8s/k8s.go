@@ -163,9 +163,7 @@ func (k *K8s) SaveCertsToSecret(ctx context.Context, secretName, secretType, nam
 	)
 
 	secret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: secretName,
-		},
+		Name: secretName,
 		Type: v1.SecretType(secretType),
 		Data: map[string][]byte{
 			caName:   ca,
@@ -287,10 +285,8 @@ func (k *K8s) applyValidatingWebhook(ctx context.Context, configurationName stri
 	}
 
 	applyConfig := &admissionapplyv1.ValidatingWebhookConfigurationApplyConfiguration{
-		TypeMetaApplyConfiguration: meta.TypeMetaApplyConfiguration{
-			Kind:       new("ValidatingWebhookConfiguration"),
-			APIVersion: new("admissionregistration.k8s.io/v1"),
-		},
+		Kind:       new("ValidatingWebhookConfiguration"),
+		APIVersion: new("admissionregistration.k8s.io/v1"),
 		ObjectMetaApplyConfiguration: &meta.ObjectMetaApplyConfiguration{
 			Name: &configurationName,
 		},
@@ -360,10 +356,8 @@ func (k *K8s) applyMutatingWebhook(ctx context.Context, configurationName string
 	}
 
 	applyConfig := &admissionapplyv1.MutatingWebhookConfigurationApplyConfiguration{
-		TypeMetaApplyConfiguration: meta.TypeMetaApplyConfiguration{
-			Kind:       new("MutatingWebhookConfiguration"),
-			APIVersion: new("admissionregistration.k8s.io/v1"),
-		},
+		Kind:       new("MutatingWebhookConfiguration"),
+		APIVersion: new("admissionregistration.k8s.io/v1"),
 		ObjectMetaApplyConfiguration: &meta.ObjectMetaApplyConfiguration{
 			Name: &configurationName,
 		},

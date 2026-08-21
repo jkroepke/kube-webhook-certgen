@@ -52,12 +52,10 @@ func TestGetCaFromCertificate(t *testing.T) {
 	ca, cert, key := genSecretData()
 
 	secret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testSecretName,
-			Namespace: testNamespace,
-		},
-		Type: testSecretType,
-		Data: map[string][]byte{"ca.crt": ca, "tls.crt": cert, "tls.key": key},
+		Name:      testSecretName,
+		Namespace: testNamespace,
+		Type:      testSecretType,
+		Data:      map[string][]byte{"ca.crt": ca, "tls.crt": cert, "tls.key": key},
 	}
 
 	k := newTestSimpleK8s(secret)
@@ -113,16 +111,12 @@ func TestPatchWebhookConfigurations(t *testing.T) {
 	k := newTestSimpleK8s(
 		&admissionv1.MutatingWebhookConfiguration{
 			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: testWebhookName,
-			},
+			Name:     testWebhookName,
 			Webhooks: []admissionv1.MutatingWebhook{{Name: "m1"}, {Name: "m2"}},
 		},
 		&admissionv1.ValidatingWebhookConfiguration{
 			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: testWebhookName,
-			},
+			Name:     testWebhookName,
 			Webhooks: []admissionv1.ValidatingWebhook{{Name: "v1"}, {Name: "v2"}},
 		},
 	)
@@ -349,31 +343,23 @@ func testK8sWithUnpatchedObjects() *K8s {
 	ca, cert, key := genSecretData()
 
 	secret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testSecretName,
-			Namespace: testNamespace,
-		},
-		Type: testSecretType,
-		Data: map[string][]byte{"ca.crt": ca, "tls.crt": cert, "tls.key": key},
+		Name:      testSecretName,
+		Namespace: testNamespace,
+		Type:      testSecretType,
+		Data:      map[string][]byte{"ca.crt": ca, "tls.crt": cert, "tls.key": key},
 	}
 
 	validatingWebhook := &admissionv1.ValidatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: testWebhookName,
-		},
+		Name:     testWebhookName,
 		Webhooks: []admissionv1.ValidatingWebhook{{Name: "v1"}, {Name: "v2"}},
 	}
 	mutatingWebhook := &admissionv1.MutatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: testWebhookName,
-		},
+		Name:     testWebhookName,
 		Webhooks: []admissionv1.MutatingWebhook{{Name: "m1"}, {Name: "m2"}},
 	}
 
 	apiService := &apiregistrationv1.APIService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: testAPIServiceName,
-		},
+		Name: testAPIServiceName,
 	}
 
 	return &K8s{

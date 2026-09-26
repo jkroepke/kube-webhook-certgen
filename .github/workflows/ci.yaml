@@ -13,7 +13,7 @@ on: # zizmor: ignore[cache-poisoning]
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: Build & Test
     permissions:
       contents: read
@@ -35,7 +35,7 @@ jobs:
       - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
 
   goreleaser:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: Test goreleaser
     permissions:
       contents: read
@@ -74,7 +74,7 @@ jobs:
           path: dist/
   lint:
     name: lint
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:
@@ -92,12 +92,12 @@ jobs:
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           # renovate: github=golangci/golangci-lint
-          version: v2.13.2
+          version: v2.14.0
           args: "--max-same-issues=0"
 
   super-lint:
     name: super-lint
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:
@@ -181,7 +181,7 @@ jobs:
       - lint
       - goreleaser
       - super-lint
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
       id-token: write

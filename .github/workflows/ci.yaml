@@ -53,9 +53,6 @@ jobs:
 
       - uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@21162887f0d6e25b4e8eafb0cf44cf9bf7f6acd3
 
@@ -214,9 +211,6 @@ jobs:
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@21162887f0d6e25b4e8eafb0cf44cf9bf7f6acd3

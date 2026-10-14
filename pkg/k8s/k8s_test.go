@@ -42,7 +42,7 @@ func genSecretData() ([]byte, []byte, []byte) {
 func newTestSimpleK8s(objects ...runtime.Object) *K8s {
 	return &K8s{
 		clientSet:           fake.NewClientset(objects...),
-		aggregatorClientSet: aggregatorfake.NewSimpleClientset(),
+		aggregatorClientSet: aggregatorfake.NewClientset(),
 	}
 }
 
@@ -123,7 +123,7 @@ func TestPatchWebhookConfigurations(t *testing.T) {
 
 	ctx := contextWithDeadline(t)
 
-	if err := k.patchWebhookConfigurations(ctx, testWebhookName, ca, fail, true, true, "update"); err != nil {
+	if err := k.patchWebhookConfigurations(ctx, testWebhookName, ca, fail, true, true); err != nil {
 		t.Fatalf("Unexpected error patching webhooks: %s: %v", err.Error(), errors.Unwrap(err))
 	}
 
@@ -137,7 +137,7 @@ func TestPatchWebhookConfigurations(t *testing.T) {
 
 	whval, err := k.clientSet.
 		AdmissionregistrationV1().
-		MutatingWebhookConfigurations().
+		ValidatingWebhookConfigurations().
 		Get(ctx, testWebhookName, metav1.GetOptions{})
 	if err != nil {
 		t.Error(err)
@@ -174,6 +174,28 @@ func TestPatchWebhookConfigurations(t *testing.T) {
 	if whval.Webhooks[1].FailurePolicy == nil {
 		t.Errorf("Expected second validating webhook failure policy to be set to %s", fail)
 	}
+
+	requireAppliedByFieldManager(t, whmut.ManagedFields)
+	requireAppliedByFieldManager(t, whval.ManagedFields)
+}
+
+// requireAppliedByFieldManager asserts that kube-webhook-certgen only wrote the object using server-side apply.
+func requireAppliedByFieldManager(t *testing.T, managedFields []metav1.ManagedFieldsEntry) {
+	t.Helper()
+
+	var applied bool
+
+	for _, entry := range managedFields {
+		if entry.Manager != fieldManager {
+			continue
+		}
+
+		require.Equal(t, metav1.ManagedFieldsOperationApply, entry.Operation, "unexpected operation for field manager %q", fieldManager)
+
+		applied = true
+	}
+
+	require.True(t, applied, "expected managed fields entry for field manager %q", fieldManager)
 }
 
 func Test_Patching_objects(t *testing.T) {
@@ -251,7 +273,6 @@ func Test_Patching_objects(t *testing.T) {
 		o := PatchOptions{
 			APIServiceName: testAPIServiceName,
 			CABundle:       []byte("foo"),
-			PatchMethod:    "update",
 		}
 
 		if err := k.PatchObjects(ctx, o); err != nil {
@@ -274,6 +295,12 @@ func Test_Patching_objects(t *testing.T) {
 			}
 		})
 
+		t.Run("is_applied_by_field_manager", func(t *testing.T) {
+			t.Parallel()
+
+			requireAppliedByFieldManager(t, apiService.ManagedFields)
+		})
+
 		t.Run("sets_ca_bundle_with_ca_certificate_from_created_secret", func(t *testing.T) {
 			t.Parallel()
 
@@ -294,7 +321,6 @@ func Test_Patching_objects(t *testing.T) {
 
 		o := PatchOptions{
 			ValidatingWebhookConfigurationName: testWebhookName,
-			PatchMethod:                        "update",
 		}
 
 		if err := k.PatchObjects(ctx, o); err != nil {
@@ -309,7 +335,6 @@ func Test_Patching_objects(t *testing.T) {
 
 		o := PatchOptions{
 			MutatingWebhookConfigurationName: testWebhookName,
-			PatchMethod:                      "update",
 		}
 
 		if err := k.PatchObjects(ctx, o); err != nil {
@@ -364,6 +389,6 @@ func testK8sWithUnpatchedObjects() *K8s {
 
 	return &K8s{
 		clientSet:           fake.NewClientset(secret, validatingWebhook, mutatingWebhook),
-		aggregatorClientSet: aggregatorfake.NewSimpleClientset(apiService),
+		aggregatorClientSet: aggregatorfake.NewClientset(apiService),
 	}
 }

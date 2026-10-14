@@ -68,6 +68,113 @@ func TestGetCaFromCertificate(t *testing.T) {
 	}
 }
 
+func TestGetCaFromSecretFallsBackToTLSKey(t *testing.T) {
+	t.Parallel()
+
+	secret := &v1.Secret{
+		Name:      testSecretName,
+		Namespace: testNamespace,
+		Type:      v1.SecretTypeTLS,
+		Data:      map[string][]byte{"ca.crt": []byte("ca"), "tls.crt": []byte("cert"), "tls.key": []byte("key")},
+	}
+
+	k := newTestSimpleK8s(secret)
+
+	retrievedCa, err := k.GetCaFromSecret(contextWithDeadline(t), "ca", testSecretName, testNamespace)
+	require.NoError(t, err)
+	require.Equal(t, "ca", string(retrievedCa))
+}
+
+func TestGetSecretReturnsErrNoSecret(t *testing.T) {
+	t.Parallel()
+
+	k := newTestSimpleK8s()
+
+	_, err := k.GetSecret(contextWithDeadline(t), testSecretName, testNamespace)
+	require.ErrorIs(t, err, ErrNoSecret)
+}
+
+func TestMigrateSecretToTLS(t *testing.T) {
+	t.Parallel()
+
+	for name, data := range map[string]map[string][]byte{
+		"legacy_keys": {"ca": []byte("ca"), "cert": []byte("cert"), "key": []byte("key")},
+		"tls_keys":    {"ca.crt": []byte("ca"), "tls.crt": []byte("cert"), "tls.key": []byte("key")},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := contextWithDeadline(t)
+
+			k := newTestSimpleK8s(&v1.Secret{
+				Name:        testSecretName,
+				Namespace:   testNamespace,
+				Labels:      map[string]string{"app": "test"},
+				Annotations: map[string]string{"note": "kept"},
+				Type:        v1.SecretTypeOpaque,
+				Data:        data,
+			})
+
+			secret, err := k.GetSecret(ctx, testSecretName, testNamespace)
+			require.NoError(t, err)
+
+			require.NoError(t, k.MigrateSecretToTLS(ctx, secret, "ca.crt", "tls.crt", "tls.key"))
+
+			migrated, err := k.GetSecret(ctx, testSecretName, testNamespace)
+			require.NoError(t, err)
+
+			require.Equal(t, v1.SecretTypeTLS, migrated.Type)
+			require.Equal(t, map[string]string{"app": "test"}, migrated.Labels)
+			require.Equal(t, map[string]string{"note": "kept"}, migrated.Annotations)
+			require.Equal(t, "ca", string(migrated.Data["ca.crt"]))
+			require.Equal(t, "cert", string(migrated.Data["tls.crt"]))
+			require.Equal(t, "key", string(migrated.Data["tls.key"]))
+
+			// existing entries are kept for workloads that still mount them
+			for key, value := range data {
+				require.Equal(t, value, migrated.Data[key])
+			}
+		})
+	}
+}
+
+func TestMigrateSecretToTLSKeepsSecretOnMissingKeys(t *testing.T) {
+	t.Parallel()
+
+	for name, keys := range map[string][3]string{
+		"missing_legacy_key":   {"ca.crt", "tls.crt", "tls.key"},
+		"invalid_tls_key_name": {"ca.crt", "my.crt", "my.key"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := contextWithDeadline(t)
+
+			data := map[string][]byte{"ca": []byte("ca"), "cert": []byte("cert"), "key": []byte("key")}
+			if name == "missing_legacy_key" {
+				delete(data, "key")
+			}
+
+			k := newTestSimpleK8s(&v1.Secret{
+				Name:      testSecretName,
+				Namespace: testNamespace,
+				Type:      v1.SecretTypeOpaque,
+				Data:      data,
+			})
+
+			secret, err := k.GetSecret(ctx, testSecretName, testNamespace)
+			require.NoError(t, err)
+
+			require.Error(t, k.MigrateSecretToTLS(ctx, secret, keys[0], keys[1], keys[2]))
+
+			unchanged, err := k.GetSecret(ctx, testSecretName, testNamespace)
+			require.NoError(t, err)
+			require.Equal(t, v1.SecretTypeOpaque, unchanged.Type)
+			require.Equal(t, data, unchanged.Data)
+		})
+	}
+}
+
 func TestSaveCertsToSecret(t *testing.T) {
 	t.Parallel()
 

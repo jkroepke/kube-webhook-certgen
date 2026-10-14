@@ -89,7 +89,6 @@ Flags:
   -h, --help                          help for patch
       --namespace string              Namespace of the secret where certificate information will be read from
       --patch-failure-policy string   If set, patch the webhooks with this failure policy. Valid options are Ignore or Fail
-      --patch-mode string             Patch method to use: patch|update. patch uses server side apply, update uses a full object update (default "update")
       --patch-mutating                If true, patch MutatingWebhookConfiguration (default true)
       --patch-validating              If true, patch ValidatingWebhookConfiguration (default true)
       --secret-name string            Name of the secret where certificate information will be read from
@@ -101,6 +100,20 @@ Global Flags:
       --log-format string   Log format: text|json (default "json")
       --log-level string    Log level: error|warn|info|debug (default "info")
 ```
+
+Objects are patched using [server-side apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/)
+with the field manager `kube-webhook-certgen`. Only `caBundle`, `failurePolicy` (if set) and, for APIServices,
+`insecureSkipTLSVerify` are owned by kube-webhook-certgen, so other tools applying the same objects keep ownership of all other fields.
+
+The patch job requires the following RBAC permissions:
+
+| API group                       | Resource                                                            | Verbs          |
+|---------------------------------|---------------------------------------------------------------------|----------------|
+| `""`                            | `secrets` (in `--namespace`)                                        | `get`          |
+| `admissionregistration.k8s.io`  | `validatingwebhookconfigurations`, `mutatingwebhookconfigurations`  | `get`, `patch` |
+| `apiregistration.k8s.io`        | `apiservices` (only with `--apiservice-name`)                       | `get`, `patch` |
+
+The `--patch-mode` flag is deprecated and has no effect.
 
 ## Known Users
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) helm chart

@@ -27,7 +27,6 @@ type PatchConfig struct {
 	SecretName         string
 	CaName             string
 	Namespace          string
-	PatchMethod        string
 	PatchMutating      bool
 	PatchValidating    bool
 }
@@ -71,7 +70,6 @@ func Patch(ctx context.Context, cfg *PatchConfig) error {
 		CABundle:          ca,
 		FailurePolicyType: failurePolicy,
 		APIServiceName:    cfg.APIServiceName,
-		PatchMethod:       cfg.PatchMethod,
 	}
 
 	if cfg.PatchMutating {
@@ -109,7 +107,6 @@ func patchCommand(_ *cobra.Command, _ []string) error {
 		PatchFailurePolicy: cfg.patchFailurePolicy,
 		APIServiceName:     cfg.apiServiceName,
 		WebhookName:        cfg.webhookName,
-		PatchMethod:        cfg.patchMethod,
 		Patcher:            patcher,
 	}
 
@@ -135,10 +132,12 @@ func init() {
 	patch.Flags().StringVar(&cfg.webhookName, "webhook-name", "", "Name of ValidatingWebhookConfiguration and MutatingWebhookConfiguration that will be updated")
 	patch.Flags().StringVar(&cfg.apiServiceName, "apiservice-name", "", "Name of APIService that will be patched")
 	patch.Flags().StringVar(&cfg.caName, "ca-name", "ca", "Name of cert file in the secret")
-	patch.Flags().StringVar(&cfg.patchMethod, "patch-mode", "update", "Patch method to use: patch|update. patch uses server side apply, update uses a full object update")
+	patch.Flags().StringVar(&cfg.patchMethod, "patch-mode", "", "Deprecated: has no effect, objects are always patched using server-side apply")
 	patch.Flags().BoolVar(&cfg.patchValidating, "patch-validating", true, "If true, patch ValidatingWebhookConfiguration")
 	patch.Flags().BoolVar(&cfg.patchMutating, "patch-mutating", true, "If true, patch MutatingWebhookConfiguration")
 	patch.Flags().StringVar(&cfg.patchFailurePolicy, "patch-failure-policy", "", "If set, patch the webhooks with this failure policy. Valid options are Ignore or Fail")
+
+	_ = patch.Flags().MarkDeprecated("patch-mode", "objects are always patched using server-side apply")
 
 	_ = patch.MarkFlagRequired("secret-name")
 	_ = patch.MarkFlagRequired("namespace")

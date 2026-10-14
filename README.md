@@ -61,20 +61,36 @@ Usage:
   kube-webhook-certgen create [flags]
 
 Flags:
-      --ca-name string       Name of ca file in the secret (default "ca")
-      --cert-name string     Name of cert file in the secret (default "cert")
+      --ca-name string       Name of ca file in the secret. Defaults to ca.crt for kubernetes.io/tls secrets (default "ca")
+      --cert-name string     Name of cert file in the secret. Defaults to tls.crt for kubernetes.io/tls secrets (default "cert")
   -h, --help                 help for create
       --host string          Comma-separated hostnames and IPs to generate a certificate for
-      --key-name string      Name of key file in the secret (default "key")
+      --key-name string      Name of key file in the secret. Defaults to tls.key for kubernetes.io/tls secrets (default "key")
       --namespace string     Namespace of the secret where certificate information will be written
       --secret-name string   Name of the secret where certificate information will be written
-      --secret-type string   Type of the secret where certificate information will be written (default "Opaque")
+      --secret-type string   Type of the secret where certificate information will be written. Set to kubernetes.io/tls to use tls.crt, tls.key and ca.crt as default key names and to migrate an existing secret of another type (default "Opaque")
 
 Global Flags:
       --kubeconfig string   Path to kubeconfig file: e.g. ~/.kube/kind-config-kind
       --log-format string   Log format: text|json (default "json")
       --log-level string    Log level: error|warn|info|debug (default "info")
 ```
+
+The create job requires `get` and `create` permissions on `secrets` in `--namespace`.
+
+#### kubernetes.io/tls secrets
+
+By default, the certificates are stored in an `Opaque` secret using the keys `ca`, `cert` and `key`.
+With `--secret-type=kubernetes.io/tls`, the keys default to `ca.crt`, `tls.crt` and `tls.key` instead.
+
+If the secret already exists with another type, it is migrated to `kubernetes.io/tls`.
+Since the type of secret is immutable, the secret is deleted and recreated with the same certificates,
+so already patched webhooks stay valid. Missing `ca.crt`, `tls.crt` and `tls.key` entries are copied
+from the `ca`, `cert` and `key` entries. All existing entries are kept, so workloads that still mount
+the old entries keep working. The migration additionally requires the `delete` permission on `secrets`.
+
+`patch` falls back to the `ca.crt` and `ca` entries if `--ca-name` is not found in the secret,
+so it works with both secret layouts without changes.
 
 ### Patch
 ```

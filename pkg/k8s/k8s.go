@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	v1 "k8s.io/api/core/v1"
@@ -54,15 +55,15 @@ type PatchOptions struct {
 // ErrNoSecret is returned when a secret is not found.
 var ErrNoSecret = errors.New("no secret found")
 
-// GetCaFromSecret retrieves the CA certificate from a Kubernetes secret.
-// Returns ErrNoSecret if the secret doesn't exist, or an error if the secret
-// exists but doesn't contain a 'ca.crt' key.
-func (k *K8s) GetCaFromSecret(ctx context.Context, caName, secretName, namespace string) ([]byte, error) {
-	slog.DebugContext(ctx, "getting CA from secret",
-		slog.String("secret", secretName),
-		slog.String("namespace", namespace),
-	)
+// Legacy key names used by secrets created with the default flags of the Opaque secret type.
+const (
+	legacyCAKey   = "ca"
+	legacyCertKey = "cert"
+	legacyKeyKey  = "key"
+)
 
+// GetSecret retrieves a Kubernetes secret. Returns ErrNoSecret if the secret doesn't exist.
+func (k *K8s) GetSecret(ctx context.Context, secretName, namespace string) (*v1.Secret, error) {
 	secret, err := k.clientSet.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -72,17 +73,31 @@ func (k *K8s) GetCaFromSecret(ctx context.Context, caName, secretName, namespace
 		return nil, fmt.Errorf("error getting secret: %w", err)
 	}
 
-	data := secret.Data[caName]
-	if data == nil {
-		// Fallback to 'ca' for backward compatibility
-		data = secret.Data["ca"]
+	return secret, nil
+}
 
-		if data == nil {
-			return nil, fmt.Errorf("got secret, but it did not contain a '%s' key", caName)
+// GetCaFromSecret retrieves the CA certificate from a Kubernetes secret.
+// Returns ErrNoSecret if the secret doesn't exist, or an error if the secret
+// exists but contains neither the caName key nor one of the 'ca.crt' or 'ca' fallback keys.
+func (k *K8s) GetCaFromSecret(ctx context.Context, caName, secretName, namespace string) ([]byte, error) {
+	slog.DebugContext(ctx, "getting CA from secret",
+		slog.String("secret", secretName),
+		slog.String("namespace", namespace),
+	)
+
+	secret, err := k.GetSecret(ctx, secretName, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fallback to 'ca.crt' (kubernetes.io/tls) and 'ca' (Opaque) for backward compatibility
+	for _, name := range []string{caName, v1.ServiceAccountRootCAKey, legacyCAKey} {
+		if data := secret.Data[name]; data != nil {
+			return data, nil
 		}
 	}
 
-	return data, nil
+	return nil, fmt.Errorf("got secret, but it did not contain a '%s' key", caName)
 }
 
 // PatchObjects patches webhook configurations and/or API services with the provided CA bundle.
@@ -175,6 +190,78 @@ func (k *K8s) SaveCertsToSecret(ctx context.Context, secretName, secretType, nam
 	}
 
 	slog.DebugContext(ctx, "successfully saved secret")
+
+	return nil
+}
+
+// MigrateSecretToTLS converts an existing secret into a kubernetes.io/tls secret.
+//
+// The type of secret is immutable, so the secret is deleted and recreated with the same certificates.
+// Missing caName, certName and keyName entries are copied from the legacy 'ca', 'cert' and 'key' entries.
+// All existing entries are kept, so workloads that still mount the legacy entries keep working.
+func (k *K8s) MigrateSecretToTLS(ctx context.Context, secret *v1.Secret, caName, certName, keyName string) error {
+	slog.InfoContext(ctx, "migrating secret to type "+string(v1.SecretTypeTLS),
+		slog.String("secret", secret.Name),
+		slog.String("namespace", secret.Namespace),
+		slog.String("type", string(secret.Type)),
+	)
+
+	data := maps.Clone(secret.Data)
+	if data == nil {
+		data = make(map[string][]byte, 3)
+	}
+
+	for _, entry := range []struct{ name, legacyName string }{
+		{caName, legacyCAKey},
+		{certName, legacyCertKey},
+		{keyName, legacyKeyKey},
+	} {
+		if _, ok := data[entry.name]; ok {
+			continue
+		}
+
+		value, ok := secret.Data[entry.legacyName]
+		if !ok {
+			return fmt.Errorf("unable to migrate secret: neither '%s' nor '%s' key found", entry.name, entry.legacyName)
+		}
+
+		data[entry.name] = value
+	}
+
+	// Validate before deleting the secret, the API server would reject the new secret otherwise.
+	for _, required := range []string{v1.TLSCertKey, v1.TLSPrivateKeyKey} {
+		if _, ok := data[required]; !ok {
+			return fmt.Errorf("unable to migrate secret: type %s requires a '%s' key", v1.SecretTypeTLS, required)
+		}
+	}
+
+	migrated := &v1.Secret{
+		Name:            secret.Name,
+		Namespace:       secret.Namespace,
+		Labels:          secret.Labels,
+		Annotations:     secret.Annotations,
+		OwnerReferences: secret.OwnerReferences,
+		Type:            v1.SecretTypeTLS,
+		Data:            data,
+	}
+
+	client := k.clientSet.CoreV1().Secrets(secret.Namespace)
+
+	// Only delete the secret if it was not modified in the meantime.
+	if err := client.Delete(ctx, secret.Name, metav1.DeleteOptions{
+		Preconditions: &metav1.Preconditions{
+			UID:             &secret.UID,
+			ResourceVersion: &secret.ResourceVersion,
+		},
+	}); err != nil {
+		return fmt.Errorf("error deleting secret: %w", err)
+	}
+
+	if _, err := client.Create(ctx, migrated, metav1.CreateOptions{}); err != nil {
+		return fmt.Errorf("error recreating secret as type %s: %w", v1.SecretTypeTLS, err)
+	}
+
+	slog.InfoContext(ctx, "successfully migrated secret")
 
 	return nil
 }
